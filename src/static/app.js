@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
+
         const activityCard = document.createElement("div");
         activityCard.className = "activity-card";
 
@@ -24,9 +25,38 @@ document.addEventListener("DOMContentLoaded", () => {
           <h4>${name}</h4>
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p class="availability"><strong>Availability:</strong> ${spotsLeft} spots left</p>
         `;
 
+        // Build participants section programmatically so we can attach delete buttons
+        const participantsSection = document.createElement('div');
+        participantsSection.className = 'participants-section';
+        participantsSection.innerHTML = `
+          <h5>Participants</h5>
+          <ul class="participants-list"></ul>
+        `;
+
+        const ul = participantsSection.querySelector('.participants-list');
+        if (details.participants.length > 0) {
+          details.participants.forEach(p => {
+            const li = document.createElement('li');
+            li.textContent = p;
+
+            const btn = document.createElement('button');
+            btn.className = 'delete-btn';
+            btn.textContent = '✖';
+            btn.title = 'Unregister';
+            btn.dataset.activity = name;
+            btn.dataset.email = p;
+
+            li.appendChild(btn);
+            ul.appendChild(li);
+          });
+        } else {
+          ul.innerHTML = '<li><em>No participants yet</em></li>';
+        }
+
+        activityCard.appendChild(participantsSection);
         activitiesList.appendChild(activityCard);
 
         // Add option to select dropdown
@@ -40,6 +70,47 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching activities:", error);
     }
   }
+
+  // Delegate click for delete buttons inside activities list
+  activitiesList.addEventListener('click', async (event) => {
+    const target = event.target;
+    if (!target.classList.contains('delete-btn')) return;
+
+    const activity = target.dataset.activity;
+    const email = target.dataset.email;
+
+    if (!confirm(`Remove ${email} from ${activity}?`)) return;
+
+    try {
+      const response = await fetch(
+        `/activities/${encodeURIComponent(activity)}/participants?email=${encodeURIComponent(email)}`,
+        { method: 'DELETE' }
+      );
+
+      const result = await response.json();
+
+      if (response.ok) {
+        messageDiv.textContent = result.message;
+        messageDiv.className = 'success';
+        messageDiv.classList.remove('hidden');
+        // Refresh activities to reflect change
+        fetchActivities();
+      } else {
+        messageDiv.textContent = result.detail || 'An error occurred';
+        messageDiv.className = 'error';
+        messageDiv.classList.remove('hidden');
+      }
+
+      setTimeout(() => {
+        messageDiv.classList.add('hidden');
+      }, 5000);
+    } catch (error) {
+      messageDiv.textContent = 'Failed to remove participant. Please try again.';
+      messageDiv.className = 'error';
+      messageDiv.classList.remove('hidden');
+      console.error('Error removing participant:', error);
+    }
+  });
 
   // Handle form submission
   signupForm.addEventListener("submit", async (event) => {
@@ -62,6 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        // Refresh activities so the newly registered participant appears
+        fetchActivities();
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
