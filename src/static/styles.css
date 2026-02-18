@@ -95,23 +95,29 @@ section h3 {
 
 .participants-list li {
   padding: 5px 0;
-  padding-left: 20px;
+  padding-left: 0;
   position: relative;
   font-size: 13px;
   color: #555;
 }
 
-.participants-list li:before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #0066cc;
-  font-weight: bold;
-}
-
 .participants-list li em {
   color: #999;
   font-style: italic;
+}
+
+/* Delete button next to participant */
+.delete-btn {
+  background: transparent;
+  border: none;
+  color: #c62828;
+  font-weight: bold;
+  margin-left: 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.delete-btn:hover {
+  color: #b71c1c;
 }
 
 .form-group {
